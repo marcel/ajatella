@@ -1,0 +1,3 @@
+# ajatella
+
+Finnish grammar
