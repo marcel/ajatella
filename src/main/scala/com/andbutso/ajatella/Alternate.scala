@@ -11,7 +11,7 @@ object Alternate {
   val C = Consonant
   val A = VowelHarmonyAlternate('a', 'ä')
   val O = VowelHarmonyAlternate('o', 'ö')
-  val Y = VowelHarmonyAlternate('u', 'y')
+  val U = VowelHarmonyAlternate('u', 'y')
 }
 
 case class VowelHarmonyAlternate(alternates: (Char, Char)) extends Alternate
