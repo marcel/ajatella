@@ -1,13 +1,49 @@
 package com.andbutso.ajatella
 
+import scala.collection.immutable.SortedSet
+
 
 object NounCase {
+  import Alternate._
+
   // TODO Implement NounCase.detect
   def detect(word: String) = {
     Seq.empty[NounCase]
   }
 
-  val All = Set(
+  def apply(letters: Letters): NounCase = {
+    new NounCase(Set(letters))
+  }
+
+  // Grammatical
+  case object Nominative extends NounCase(Set(Letters("")))
+  case object Genetive   extends NounCase(Set(Letters("n")))
+  case object Accusative extends NounCase(Set(Letters("t")))
+  case object Partative  extends NounCase(Set(Letters(A), Letters("t", A), Letters("tt", A)))
+
+  // Locative (internal)
+  case object Inessive extends NounCase(Set(Letters("ss", A)))
+  case object Elative  extends NounCase(Set(Letters("st", A)))
+  case object Illative extends NounCase(Set(Letters(V, "n"), Letters("h", V, "n"), Letters("seen")))
+
+  // Locative (external)
+  case object Adessive extends NounCase(Set(Letters("ll", A)))
+  case object Ablative extends NounCase(Set(Letters("lt", A)))
+  case object Allative extends NounCase(Set(Letters("lle")))
+
+  // Essive
+  case object Essive      extends NounCase(Set(Letters("n", A)))
+  case object Translative extends NounCase(Set(Letters("ksi")))
+
+  // Marginal
+
+  case object Comitative extends NounCase(Set(Letters("ine")))
+  case object Abessive   extends NounCase(Set(Letters("tt", A)))
+  // N.B. Singular form extremely rare
+  case object Instructive extends NounCase(Set(Letters("n")))
+
+  // Frequency distribution here: https://www.cs.tut.fi/~jkorpela/finnish-cases.html
+  val All = Set[NounCase](
     // Grammatical
     Nominative,
     Genetive,
@@ -23,7 +59,6 @@ object NounCase {
     Allative,
     // Essive
     Essive,
-    Exessive,
     Translative,
     // Marginal
     Instructive,
@@ -32,77 +67,8 @@ object NounCase {
   )
 }
 
-trait NounCase {
-  def suffix: Set[String]
-}
-
-// Grammatical
-case object Nominative extends NounCase {
-  val suffix = Set("")
-}
-
-case object Genetive extends NounCase {
-  val suffix = Set("n")
-}
-
-case object Accusative extends NounCase {
-  val suffix = Set("", "t", "n")
-}
-
-case object Partative extends NounCase {
-  val suffix = Set("ta", "a")
-}
-
-// Locative (internal)
-case object Inessive extends NounCase {
-  val suffix = Set("ssa")
-}
-
-case object Elative extends NounCase {
-  val suffix = Set("sta")
-}
-
-case object Illative extends NounCase {
-  val suffix = Set("an", "en", "on", "in", "han", "hen", "hon", "hin") // TODO Verify correctness
-}
-
-// Locative (external)
-case object Adessive extends NounCase {
-  val suffix = Set("lla")
-}
-
-case object Ablative extends NounCase {
-  val suffix = Set("lta")
-}
-
-case object Allative extends NounCase {
-  val suffix = Set("lle")
-}
-
-// Essive
-case object Essive extends NounCase {
-  val suffix = Set("na")
-}
-
-case object Exessive extends NounCase {
-  val suffix = Set("nta")
-}
-
-case object Translative extends NounCase {
-  val suffix = Set("ksi")
-}
-
-// Marginal
-case object Instructive extends NounCase {
-  val suffix = Set("n")
-}
-
-case object Abessive extends NounCase {
-  val suffix = Set("tta")
-}
-
-case object Comitative extends NounCase {
-  val suffix = Set("ne") // TODO Technically not a suffix, e.g. "taloineen", "with the house"
+class NounCase(val suffixes: Set[Letters]) extends Suffix {
+  def letters = null // TODO Choose the right suffix
 }
 
 
