@@ -47,6 +47,8 @@ object SyllableBoundary {
 }
 
 case class SyllableBoundaryDetector(characters: IndexedSeq[Char], index: Int) {
+  import Grapheme.charToGrapheme
+
   val character = characters(index)
 
   def isBoundary = {
@@ -55,13 +57,13 @@ case class SyllableBoundaryDetector(characters: IndexedSeq[Char], index: Int) {
 
   private[this] def isConsonantFollowedByVowel = {
     nextCharacter.exists { nextCharacter =>
-      !Vowel.isVowel(character) && Vowel.isVowel(nextCharacter)
+      character.isConsonant && nextCharacter.isVowel
     }
   }
 
   private[this] def isNonDiphthongUnidenticalVowelPair = {
     previousCharacter.exists { previousCharacter =>
-      Vowel.isVowel(character) && Vowel.isVowel(previousCharacter) &&
+      character.isVowel && previousCharacter.isVowel &&
         !Diphthong.isDiphthong(s"$previousCharacter$character") &&
         Vowel(character) != Vowel(previousCharacter)
     }

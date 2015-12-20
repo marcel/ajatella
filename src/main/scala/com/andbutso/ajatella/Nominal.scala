@@ -9,10 +9,34 @@ package com.andbutso.ajatella
 case class Nominal(
   root: Root,
   number: Number,
-  nounCase: NounCase,
-  possessive: Option[Possessive],
-  clitic: Option[Clitic]
-)
+  nounCase: Case,
+  possessive: Option[Possessive] = None,
+  clitic: Option[Clitic] = None
+) {
+  def number(newNumber: Number): Nominal = {
+    copy(number = newNumber)
+  }
+
+  def decline(newCase: Case) = {
+    copy(nounCase = newCase)
+  }
+
+  def possessive(newPossessive: Possessive) = {
+    copy(possessive = Some(newPossessive))
+  }
+}
+
+object Nominal {
+  implicit def stringToNominal(string: String): Nominal = {
+    require(string.indexOf(" ") == -1)
+
+    Nominal(
+      Root(Letters(string.toCharArray)),
+      Number.Singular,
+      Case.Nominative
+    )
+  }
+}
 
 case class Root(letters: Letters)
 
@@ -22,6 +46,8 @@ trait Possessive {
 }
 
 object Possessive {
+  import Number._
+
   case class FirstPerson(number: Number) extends Possessive {
     def value = {
       number match {

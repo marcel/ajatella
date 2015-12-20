@@ -2,7 +2,7 @@ package com.andbutso.ajatella
 
 import scala.annotation.tailrec
 
-case class Vowel(letter: Char) {
+case class Vowel(letter: Char) extends Grapheme {
   @tailrec
   override final def equals(o: Any): Boolean = {
     o match {
@@ -15,6 +15,14 @@ case class Vowel(letter: Char) {
       case _ =>
         false
     }
+  }
+
+  def isBack = {
+    Vowel.Back.contains(this)
+  }
+
+  def isFront = {
+    !isBack
   }
 
   override def hashCode = letter.toUpper.hashCode()
@@ -40,6 +48,16 @@ object Vowel {
 
   def isVowel(character: Char) = {
     All.contains(Vowel(character))
+  }
+
+  implicit def vowelToChar(vowel: Vowel): Char = {
+    vowel.letter
+  }
+
+  implicit def charToVowel(char: Char): Vowel = {
+    require(isVowel(char), s"'$char' must be a vowel to convert to a vowel")
+
+    Vowel(char)
   }
 }
 
