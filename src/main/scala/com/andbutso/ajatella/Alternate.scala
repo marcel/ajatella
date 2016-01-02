@@ -4,7 +4,23 @@ package com.andbutso.ajatella
 trait Alternate
 
 object Alternate {
-  case object Vowel extends Alternate
+  import com.andbutso.ajatella
+
+  case object Vowel extends Alternate {
+    override def equals(o: Any): Boolean = {
+      o match {
+        case c: Char =>
+          ajatella.Vowel.isVowel(c)
+        case s: String =>
+          s.size == 1 && ajatella.Vowel.isVowel(s.toCharArray.head)
+        case `Vowel` =>
+          true
+        case _ =>
+          false
+      }
+    }
+  }
+
   case object Consonant extends Alternate
 
   val V = Vowel

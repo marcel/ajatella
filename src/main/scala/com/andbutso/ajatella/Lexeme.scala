@@ -1,6 +1,6 @@
 package com.andbutso.ajatella
 
-case class Morpheme(string: String) {
+case class Lexeme(string: String) {
   import Vowel.charToVowel
 
   def syllables = {
@@ -19,6 +19,8 @@ case class Morpheme(string: String) {
     letters.last.isConsonant
   }
 
+  def lemma = ??? // TODO Implement w/ lemmatizer
+
   def translation = {
     WordList.translations(string)
   }
@@ -26,14 +28,22 @@ case class Morpheme(string: String) {
   def senses = {
     translation map { _.senses } getOrElse(Seq.empty)
   }
-}
 
-object Morpheme {
-  implicit def stringToMorpheme(string: String): Morpheme = {
-    Morpheme(string)
+  def partOfSpeech = {
+    translation flatMap { _.pos }
   }
 
-  implicit def morphemeToString(morpheme: Morpheme): String = {
+  def frequencyRank = {
+    WordList.wordFrequencies.rank(this)
+  }
+}
+
+object Lexeme {
+  implicit def stringToMorpheme(string: String): Lexeme = {
+    Lexeme(string)
+  }
+
+  implicit def morphemeToString(morpheme: Lexeme): String = {
     morpheme.string
   }
 }

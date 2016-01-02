@@ -8,9 +8,32 @@ object WordList {
   val dataRoot = System.getenv("AJATELLA") + "/data"
   val path = "kotus-sanalista_v1/kotus-sanalista_v1.tsv"
   val translationsPath = "fi_en_words_with_english_definition.json"
+  val partOfSpeechPath = "lexemes.tsv"
 
   lazy val list = WordList(loadWords.toSet)
   lazy val translations = loadTranslations
+
+  lazy val partOfSpeechIndex = {
+    loadLinesFromFile(partOfSpeechPath).collect {
+      case (Array(word, _, partOfSpeech, _)) =>
+        val pos = partOfSpeech.split('_').head
+        word -> pos
+    }.toMap
+  }
+
+  case class WordFrequency(words: Seq[String]) {
+    lazy val toRank = words.zipWithIndex.toMap
+
+    def rank(word: String) = {
+      toRank.get(word) getOrElse Int.MaxValue
+    }
+  }
+
+  lazy val wordFrequencies = {
+    WordFrequency(
+      loadLinesFromFile("9996-most-common-lemmas-from-Finnish-printed-news.txt") map { _.head }
+    )
+  }
 
   def loadWords = {
     loadLinesFromFile(path) collect {
@@ -41,7 +64,7 @@ object WordList {
     ).getLines().toArray
 
     val linesToInclude = if (skipHeader) lines.tail else lines
-    linesToInclude.map {
+    linesToInclude.filterNot { _.startsWith("#") }.map {
       _.split(separator, 5)
     }
   }
@@ -71,6 +94,30 @@ case class Translations(translations: Seq[Translation]) {
 case class WordList(words: Set[Word]) {
   lazy val morphemeIndex = words.map { word => word.morpheme -> word } toMap
 
+  lazy val wordTree = {
+    val wt = PrefixSearchTree()
+    words foreach { word => wt.add(word.morpheme) }
+    wt
+  }
+
+  lazy val reverseWordTree = {
+    val wt = PrefixSearchTree()
+    words foreach { word => wt.add(word.morpheme.reverse) }
+    wt
+  }
+
+  def startsWith(prefix: String) = {
+    wordTree.find(prefix) map { path =>
+      path.words
+    } getOrElse(Set.empty)
+  }
+
+  def endsWith(suffix: String) = {
+    reverseWordTree.find(suffix.reverse) map { path =>
+      path.words.map { _.reverse }
+    } getOrElse(Set.empty)
+  }
+
   def apply(morpheme: String) = {
     morphemeIndex(morpheme)
   }
@@ -78,7 +125,7 @@ case class WordList(words: Set[Word]) {
   def contains(morpheme: String) = {
     morphemeIndex.contains(morpheme)
   }
-
+//  toSeq.sortBy { w => (w.frequencyRank, w.size)}.filterNot { w => w.senses.isEmpty} foreach { w => println(w, w.senses, if (w.frequencyRank == Int.MaxValue) 0 else w.frequencyRank) }
 //  def pos(pos: POS) = {
 //    WordList(words filter { _.pos == pos })
 //  }
