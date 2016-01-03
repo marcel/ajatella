@@ -1,3 +1,3 @@
 # ajatella
 
-Finnish grammar
+Finnish morphology & grammar
