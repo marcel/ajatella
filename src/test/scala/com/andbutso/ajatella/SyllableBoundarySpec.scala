@@ -38,7 +38,8 @@ class SyllableBoundarySpec extends ParentSpec {
         "myö-hään",
         "liu-ku-a",
         "koit-taa",
-        "möy-kä-tä"
+        "möy-kä-tä",
+        "pork-ka-na"
       ) map { word =>
         word.replaceAllLiterally("-", "") -> word.split('-').toSeq
       } toMap

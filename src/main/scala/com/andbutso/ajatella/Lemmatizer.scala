@@ -1,10 +1,11 @@
 package com.andbutso.ajatella
 
-// TODO Implement (cf. http://snowball.tartarus.org/algorithms/finnish/stemmer.html)
-class Stemmer {
+class Lemmatizer {
 
 }
 
+// cf. http://snowball.tartarus.org/algorithms/finnish/stemmer.html)
+//
 //class FinnishLightStemmer {
 //
 //  public int stem(char s[], int len) {

@@ -18,33 +18,57 @@ case class Vowel(letter: Char) extends Grapheme {
   }
 
   def isBack = {
-    Vowel.Back.contains(this)
+    Vowel.Backs.contains(this)
   }
 
   def isFront = {
-    !isBack
+    Vowel.Fronts.contains(this)
+  }
+
+  def isNeutral = {
+    Vowel.Neutrals.contains(this)
+  }
+
+  def vowelType = {
+    if (isBack) {
+      Vowel.Back
+    } else if (isFront) {
+      Vowel.Front
+    } else {
+      Vowel.Neutral
+    }
   }
 
   override def hashCode = letter.toUpper.hashCode()
 }
 
 object Vowel {
+  trait Type
+  case object Front extends Type
+  case object Back extends Type
+  case object Neutral extends Type
+
+  // Back
   val a = Vowel('a')
   val o = Vowel('o')
   val u = Vowel('u')
 
+  // Neutral
   val e = Vowel('e')
   val i = Vowel('i')
 
+  // Front
   val ä = Vowel('ä')
   val ö = Vowel('ö')
   val y = Vowel('y')
 
-  // N.B. Back and front vowels do not appear together, except across word boundaries in compound words
-  val Back  = Set(a, o, u)
-  val Front = Set(ä, ö, y)
+  // N.B. Back and front vowels do not appear together,
+  // except across word boundaries in compound words
+  val Backs    = Set(a, o, u)
+  val Fronts   = Set(ä, ö, y)
+  val Neutrals = Set(e, i)
 
-  val All = Back ++ Front ++ Set(e, i)
+  val All = Backs ++ Fronts ++ Neutrals
 
   def isVowel(character: Char) = {
     All.contains(Vowel(character))

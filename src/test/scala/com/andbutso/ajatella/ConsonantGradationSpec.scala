@@ -2,6 +2,21 @@ package com.andbutso.ajatella
 
 class ConsonantGradationSpec extends ParentSpec {
   "ConsonantGradation" should {
+    import Case._
+    val cg = new ConsonantGradation
+
+    "for quantitative gradation" in {
+      "go from strong to weak when inflecting" in {
+//        cg("kaappi", Inessive) mustEqual "kaapissa"
+        ok
+      }
+
+      "go from weak to strong when reverting inflected form to basic form" in {
+        ok
+      }
+
+    }
+
     "go from strong to weak" in {
       val expectations = Map(
         "kaappi"   -> "kaapin",    // pp  : p   (#1)

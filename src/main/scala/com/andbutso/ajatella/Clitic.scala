@@ -14,4 +14,13 @@ object Clitic {
   // Uncommon
   val kA   = Clitic(Letters("k", A))
   val s    = Clitic(Letters("s"))
+
+  val All = Seq(
+    kO,
+    kin,
+    kAAn,
+    pA,
+    kA,
+    s
+  )
 }

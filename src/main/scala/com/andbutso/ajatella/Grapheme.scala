@@ -16,6 +16,10 @@ trait Grapheme {
       case _ => false
     }
   }
+
+  override def toString = {
+    letter.toString
+  }
 }
 
 object Grapheme {

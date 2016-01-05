@@ -1,5 +1,12 @@
 package com.andbutso.ajatella
 
+object Verb {
+  // TODO DerivationSuffixes, starting on Karlsson page 278
+  object DerivationSuffix {
+
+  }
+}
+
 trait Verb
 trait NonFiniteVerb extends Verb
 trait Participle extends NonFiniteVerb
