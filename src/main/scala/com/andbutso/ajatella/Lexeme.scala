@@ -7,6 +7,8 @@ case class Lexeme(val string: String) extends AnyVal {
   import Grapheme.stringToGrapheme
   import Lexeme.stringToLexeme
 
+  override def toString = string
+
   def syllables = {
     SyllableBoundary.split(string)
   }
@@ -26,7 +28,7 @@ case class Lexeme(val string: String) extends AnyVal {
   }
 
   // TODO Implement w/ lemmatizer
-  def lemma = {
+  def lemma2 = {
     val pattern = """<pre>.*\s+"([^"]+)"\s+(.*)</pre>""".r
     val query   = java.net.URLEncoder.encode(string, Encoding)
     val url     = s"http://www2.lingsoft.fi/cgi-bin/fintwol?word=$query"
@@ -37,8 +39,26 @@ case class Lexeme(val string: String) extends AnyVal {
     }
   }
 
+  def lemma = {
+    entry.map { _.word }
+  }
+
+  def isBasicForm = {
+    WordList.list.contains(string)
+  }
+
+  def endsWith(foo: GraphemeMatcher) = {
+    val ending = string.takeRight(foo.indexes.size)
+    println(s"-$ending")
+    foo.matches(ending)
+  }
+
   def translation = {
     WordList.translations(string)
+  }
+
+  def entry = {
+    WordList.entries(string)
   }
 
   def senses: Seq[Sense] = {
@@ -47,6 +67,10 @@ case class Lexeme(val string: String) extends AnyVal {
 //        _.lexeme.senses
 //      }.getOrElse(Seq.empty)
 //    }
+  }
+
+  def definitions = {
+    entry.map { _.definitions }.getOrElse(Seq.empty)
   }
 
   def drop(suffix: String): Option[Lexeme] = {
@@ -93,7 +117,7 @@ case class Lexeme(val string: String) extends AnyVal {
     string.reverse.replaceFirst(before, after).reverse
   }
 
-  def +(ending: String): Lexeme = {
+  def +(ending: Case): Lexeme = {
     string + ending
   }
 
@@ -125,7 +149,7 @@ object Lexeme {
     Lexeme(string)
   }
 
-  implicit def morphemeToString(morpheme: Lexeme): String = {
-    morpheme.string
+  implicit def lexemeToString(lexeme: Lexeme): String = {
+    lexeme.string
   }
 }

@@ -31,7 +31,7 @@ class Letters(val letters: Seq[Either[String, Alternate]]) {
         case Right(alternate) =>
           alternate match {
             case vha: VowelHarmonyAlternate =>
-              vha(lexeme.vowelType).letter.toString
+              vha(lexeme.vowelType)
             case Alternate.V =>
               lexeme.letters.filter { _.isVowel }.last
           }

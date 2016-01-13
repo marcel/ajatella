@@ -4,119 +4,105 @@ object Case {
   import Alternate._
   import Lexeme._
   import Letters._
-
-  def detect(lexeme: Lexeme): Case = {
-    if (WordList.list.contains(lexeme)) {
-      Nominative
-    } else {
-      All.flatMap { possibleCase =>
-        possibleCase.suffixes.collect {
-          case suffix if lexeme ~= suffix.toString(lexeme) =>
-            (possibleCase, suffix.toString(lexeme))
-        }
-      }.maxBy { case (c, s) => s.size }._1
-    }
-  }
+  import Consonants._
+  import Vowels._
+  import Alternate.Identity._
 //
-//  def apply(letters: Letters): Case = {
-//    new Case(Set(letters))
+//  def detect(lexeme: Lexeme): Case = {
+//    if (WordList.list.contains(lexeme)) {
+//      Nominative
+//    } else {
+//      All.flatMap { possibleCase =>
+//        possibleCase.suffixes.collect {
+//          case suffix if lexeme ~= suffix(lexeme) =>
+//            (possibleCase, suffix(lexeme))
+//        }
+//      }.maxBy { case (c, s) => s.size }._1
+//    }
 //  }
 
   // Grammatical
   case object Nominative extends Case {
-    val suffixes = Set(Letters(""))
+    def suffixes = Set(V∙C)
   }
-  case object Genetive   extends Case(Some("of")) {
-    val n = Letters("n")
-    val suffixes = Set(n)
+  case object Genetive extends Case(Some("of")) {
+    def suffixes = Set(n)
   }
   case object Accusative extends Case(Some("(object, whole)")) {
-    val t = Letters("t")
-    val suffixes = Set(t)
+    def suffixes = Set(t)
   }
   case object Partative  extends Case(Some("(object, part/incomplete)")) {
-    import com.andbutso.ajatella.{Alternate => Alt}
-
-    val A   = Letters(Alt.A)
-    val tA  = Letters("t", Alt.A)
-    val ttA = Letters("tt", Alt.A)
-
-    val suffixes = Set(A, tA, ttA)
+    def suffixes = Set(A, t∙A, t∙t∙A)
 
     override def suffixFor(lexeme: Lexeme) = {
       if (lexeme.letters.last.isVowel) {
-        Letters(A)
+        A
       } else {
-        Letters("t", A)
+        t∙A
       }
     }
   }
 
   // Locative (internal)
   case object Inessive extends Case(Some("in")) {
-    val ssA = Letters("ss", A)
-    val suffixes = Set(ssA)
+    val ssA = s∙s∙A
+    def suffixes = Set(s∙s∙A)
   }
   case object Elative  extends Case(Some("from (inside)")) {
-    val stA = Letters("st", A)
-    val suffixes = Set(stA)
+    val stA = s∙t∙A
+    def suffixes = Set(stA)
   }
   case object Illative extends Case(Some("into")) {
-    val Vn   = Letters(V, "n")
-    val hVn  = Letters("h", V, "n")
-    val seen = Letters("seen")
-    val siin = Letters("siin") // Plural
-
-    val suffixes = Set(Vn, hVn, seen, siin)
+    def suffixes = Set(V∙n, h∙V∙n, s∙e∙e∙n, s∙i∙i∙n)
 
     override def suffixFor(lexeme: Lexeme) = {
       val lastLetter = lexeme.letters.last
 
       if (lastLetter.isVowel) {
-        Letters(lastLetter.letter, "n")
+        lastLetter.letter ∙ n
       } else {
         Letters("h", lastLetter.letter, "n")
+        h ∙ lastLetter.letter ∙ n
       }
     }
   }
 
   // Locative (external)
   case object Adessive extends Case(Some("at, on")) {
-    val llA = Letters("ll", A)
-    val suffixes = Set(llA)
+    val llA = l∙l∙A
+    def suffixes = Set(llA)
   }
   case object Ablative extends Case(Some("from")) {
-    val ltA = Letters("lt", A)
-    val suffixes = Set(ltA)
+    val ltA = l∙t∙A
+    def suffixes = Set(ltA)
   }
   case object Allative extends Case(Some("to (outside), onto")) {
-    val lle = Letters("lle")
-    val suffixes = Set(lle)
+    val lle = l∙l∙e
+    def suffixes = Set(lle)
   }
 
   // Essive
   case object Essive extends Case(Some("as")) {
-    val nA = Letters("n", A)
-    val suffixes = Set(nA)
+    val nA = n∙A
+    def suffixes = Set(nA)
   }
   case object Translative extends Case(Some("into (change, transformation, not movement)")) {
-    val ksi = Letters("ksi")
-    val suffixes = Set(ksi)
+    val ksi = k∙s∙i
+    def suffixes = Set(ksi)
   }
 
   // Marginal
   case object Comitative extends Case(Some("together (with)")) {
-    val ine = Letters("ine")
-    val suffixes = Set(ine)
+    val ine = i∙n∙e
+    def suffixes = Set(ine)
   }
   case object Abessive extends Case(Some("without")) {
-    val ttA = Letters("tt", A)
-    val suffixes = Set(ttA)
+    val ttA = t∙t∙A
+    def suffixes = Set(ttA)
   }
   // N.B. Singular form extremely rare
   case object Instructive extends Case {
-    val n = Letters("n")
-    val suffixes = Set(n)
+    def suffixes = Set(n)
   }
 
   // Frequency distribution here: https://www.cs.tut.fi/~jkorpela/finnish-cases.html
@@ -155,7 +141,11 @@ object Case {
 }
 
 abstract class Case(preposition: Option[String] = None) extends Suffix {
-  def suffixes: Set[Letters]
+  def suffixes: Set[GraphemeMatcher]
+
+  def name = {
+    getClass.getSimpleName.toLowerCase.replace("$", "")
+  }
 
   def description = {
     val endings = suffixes.map { "-" + _.toString }.mkString(", ")
@@ -165,20 +155,22 @@ abstract class Case(preposition: Option[String] = None) extends Suffix {
 
   def letters = ??? // TODO Choose the right suffix
 
-  def matches(lexeme: Lexeme) = {
-    suffixes.exists { suffix =>
-      lexeme.contains(suffix.toString(lexeme))
-    }
-  }
+  // TODO Revisit
+//  def matches(lexeme: Lexeme) = {
+//    suffixes.exists { suffix =>
+//      lexeme.endsWith(suffix(lexeme))
+//    }
+//  }
 
   def suffixFor(lexeme: Lexeme) = {
     suffixes.head
   }
 
+  // TODO Revisit
   def :+:(lexeme: Lexeme): Lexeme = {
     val cg = new ConsonantGradation
     // TODO Deal with when letters.size is greater than 1
-    cg(lexeme, suffixFor(lexeme).toString(lexeme))
+    cg.baz(lexeme + suffixFor(lexeme).interpolate(lexeme))
   }
 }
 

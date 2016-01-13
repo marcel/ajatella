@@ -9,9 +9,11 @@ object WordList {
   val path = "kotus-sanalista_v1/kotus-sanalista_v1.tsv"
   val translationsPath = "fi_en_words_with_english_definition.json"
   val partOfSpeechPath = "lexemes.tsv"
+  val wiktionaryPath   = "fi_en_wiktionary.json"
 
   lazy val list = WordList(loadWords.toSet)
   lazy val translations = loadTranslations
+  lazy val entries = loadWiktionary
 
   lazy val partOfSpeechIndex = {
     loadLinesFromFile(partOfSpeechPath).collect {
@@ -58,6 +60,12 @@ object WordList {
     Translations(json.extract[Seq[Translation]])
   }
 
+  def loadWiktionary = {
+    val data = io.Source.fromFile(makePath(wiktionaryPath)).getLines.toArray.mkString
+    val json = parse(data)
+    Entries(json.camelizeKeys.extract[Seq[Entry]])
+  }
+
   def loadLinesFromFile(name: String, skipHeader: Boolean = true, separator: String = "\t") = {
     val lines = io.Source.fromFile(
       makePath(name)
@@ -71,6 +79,97 @@ object WordList {
 
   def makePath(file: String) = s"$dataRoot/$file"
 }
+
+case class Entries(entries: Seq[Entry]) {
+  lazy val completeLookup = {
+    val formToIndex = collection.mutable.Map[String, Int]()
+
+    entries.zipWithIndex.foreach { case (entry, index) =>
+      entry.conjugations.foreach { conjugation =>
+        formToIndex(conjugation.positive) = index
+        formToIndex(conjugation.negative) = index
+      }
+
+      entry.declensions.foreach { inflectedForm =>
+        formToIndex(inflectedForm.singular) = index
+        formToIndex(inflectedForm.plural) = index
+      }
+    }
+
+    formToIndex
+  }
+
+  lazy val lemmaLookup = entries.map { entry => entry.word -> entry }.toMap
+
+  def apply(word: String) = {
+    lemmaLookup.get(word) orElse {
+      completeLookup.get(word) map { index =>
+        entries(index)
+      }
+    }
+  }
+
+  lazy val wordTree = {
+    val wt = PrefixSearchTree()
+    entries foreach { entry => wt.add(entry.word) }
+    wt
+  }
+
+  lazy val reverseWordTree = {
+    val wt = PrefixSearchTree()
+    entries foreach { entry => wt.add(entry.word.reverse) }
+    wt
+  }
+
+  def startsWith(prefix: String) = {
+    wordTree.find(prefix) map { path =>
+      path.words
+    } getOrElse(Set.empty)
+  }
+
+  def entriesStartingWith(prefix: String) = {
+    startsWith(prefix) flatMap { word => apply(word) }
+  }
+
+  def endsWith(suffix: String) = {
+    reverseWordTree.find(suffix.reverse) map { path =>
+      path.words.map { _.reverse }
+    } getOrElse(Set.empty)
+  }
+
+  def entriesEndingWith(suffix: String) = {
+    startsWith(suffix.reverse) flatMap { word => apply(word) }
+  }
+}
+
+case class Entry(
+  word: String,
+  definitions: Seq[Definition],
+  declensions: Seq[InflectedForm],
+  conjugations: Seq[Conjugation],
+  conjugationType: Option[String],
+  declensionType: Option[String],
+  pronunciation: Option[String],
+  hyphenation: Option[String],
+  relatedTerms: Seq[String],
+  derivedTerms: Map[String, Seq[String]],
+  seeAlso: Seq[String]
+) {
+  import org.kiama.output.PrettyPrinter._
+
+  def inflected(nounCase: Case) = {
+    declensions.find { _.caseName == nounCase.name }
+  }
+
+  def formatted = {
+    pretty(any(this), w = 1)
+  }
+}
+case class InflectedForm(caseName: String, singular: String, plural: String)
+case class Conjugation(mood: String, tense: String, person: String, number: Option[String], positive: String, negative: String)
+
+case class Definition(partOfSpeech: String, number: Int, text: String, examples: Seq[ExampleUsage])
+case class ExampleUsage(finnish: String, english: String)
 
 case class Sense(number: Int, text: String)
 case class Translation(term: String, pos: Option[String], senses: Seq[Sense])

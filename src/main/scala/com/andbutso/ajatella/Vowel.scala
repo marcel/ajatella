@@ -39,15 +39,10 @@ case class Vowel(letter: Char) extends Grapheme {
     }
   }
 
-  override def hashCode = letter.toUpper.hashCode()
+//  override def hashCode = letter.toUpper.hashCode()
 }
 
-object Vowel {
-  trait Type
-  case object Front extends Type
-  case object Back extends Type
-  case object Neutral extends Type
-
+object Vowels {
   // Back
   val a = Vowel('a')
   val o = Vowel('o')
@@ -61,6 +56,15 @@ object Vowel {
   val ä = Vowel('ä')
   val ö = Vowel('ö')
   val y = Vowel('y')
+}
+
+object Vowel {
+  import Vowels._
+
+  trait Type
+  case object Front extends Type
+  case object Back extends Type
+  case object Neutral extends Type
 
   // N.B. Back and front vowels do not appear together,
   // except across word boundaries in compound words
@@ -71,12 +75,12 @@ object Vowel {
   val All = Backs ++ Fronts ++ Neutrals
 
   def isVowel(character: Char) = {
-    All.contains(Vowel(character))
+    All.contains(Vowel(character.toLower))
   }
 
-  implicit def vowelToChar(vowel: Vowel): Char = {
-    vowel.letter
-  }
+//  implicit def vowelToChar(vowel: Vowel): Char = {
+//    vowel.letter
+//  }
 
   implicit def charToVowel(char: Char): Vowel = {
     require(isVowel(char), s"'$char' must be a vowel to convert to a vowel")
@@ -84,6 +88,3 @@ object Vowel {
     Vowel(char)
   }
 }
-
-// TODO Encode rules of vowel harmony dictated by front/back presence
-// in the word stem
