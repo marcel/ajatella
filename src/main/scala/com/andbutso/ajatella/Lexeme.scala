@@ -43,6 +43,10 @@ case class Lexeme(val string: String) extends AnyVal {
     entry.map { _.word }
   }
 
+  def decompound = {
+    Decompounder(string)
+  }
+
   def isBasicForm = {
     WordList.list.contains(string)
   }
@@ -72,6 +76,8 @@ case class Lexeme(val string: String) extends AnyVal {
   def definitions = {
     entry.map { _.definitions }.getOrElse(Seq.empty)
   }
+
+  def define = definitions
 
   def drop(suffix: String): Option[Lexeme] = {
     if (string.endsWith(suffix)) {

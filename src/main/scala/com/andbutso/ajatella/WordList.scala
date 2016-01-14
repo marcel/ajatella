@@ -109,6 +109,10 @@ case class Entries(entries: Seq[Entry]) {
     }
   }
 
+  def contains(word: String) = {
+    apply(word).isDefined
+  }
+
   lazy val wordTree = {
     val wt = PrefixSearchTree()
     entries foreach { entry => wt.add(entry.word) }
