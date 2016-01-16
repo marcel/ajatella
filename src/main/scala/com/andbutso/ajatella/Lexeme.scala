@@ -47,13 +47,22 @@ case class Lexeme(val string: String) extends AnyVal {
     Decompounder(string)
   }
 
+  def form = {
+    WordList.entries.form(string)
+  }
+
+  def inflected(nounCase: Case) = {
+    WordList.entries(string) flatMap { entry =>
+      entry.inflected(nounCase)
+    }
+  }
+
   def isBasicForm = {
-    WordList.list.contains(string)
+    WordList.list.contains(string) || WordList.entries.form(string).exists { _ == "lemma" }
   }
 
   def endsWith(foo: GraphemeMatcher) = {
     val ending = string.takeRight(foo.indexes.size)
-    println(s"-$ending")
     foo.matches(ending)
   }
 

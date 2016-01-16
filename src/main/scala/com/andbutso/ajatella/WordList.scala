@@ -63,7 +63,7 @@ object WordList {
   def loadWiktionary = {
     val data = io.Source.fromFile(makePath(wiktionaryPath)).getLines.toArray.mkString
     val json = parse(data)
-    Entries(json.camelizeKeys.extract[Seq[Entry]])
+    Entries(json.camelizeKeys.extract[Seq[Entry]].toIndexedSeq)
   }
 
   def loadLinesFromFile(name: String, skipHeader: Boolean = true, separator: String = "\t") = {
@@ -80,11 +80,15 @@ object WordList {
   def makePath(file: String) = s"$dataRoot/$file"
 }
 
-case class Entries(entries: Seq[Entry]) {
+case class Entries(entries: IndexedSeq[Entry]) {
+  val englishDefinitionWordReverseIndex = collection.mutable.Map[String, Set[Int]]()
+
   lazy val completeLookup = {
     val formToIndex = collection.mutable.Map[String, Int]()
 
     entries.zipWithIndex.foreach { case (entry, index) =>
+      formToIndex(entry.word) = index
+
       entry.conjugations.foreach { conjugation =>
         formToIndex(conjugation.positive) = index
         formToIndex(conjugation.negative) = index
@@ -94,18 +98,42 @@ case class Entries(entries: Seq[Entry]) {
         formToIndex(inflectedForm.singular) = index
         formToIndex(inflectedForm.plural) = index
       }
+
+      val definitionWords = entry.definitions.flatMap { definition =>
+        definition.text.split("""\W+""").map { _.toLowerCase }
+      }.filter { _.size >= 4 }.toSet
+
+      definitionWords.foreach { definitionWord =>
+        val entryIndexes = englishDefinitionWordReverseIndex.getOrElseUpdate(definitionWord, Set.empty)
+        englishDefinitionWordReverseIndex(definitionWord) = entryIndexes + index
+      }
     }
 
     formToIndex
   }
 
-  lazy val lemmaLookup = entries.map { entry => entry.word -> entry }.toMap
+  def form(word: String) = {
+    completeLookup.get(word) flatMap { index =>
+      val entry = entries(index)
+      if (entry.word == word) {
+        Some("lemma")
+      } else {
+        entry.conjugations.collectFirst {
+          case conjugation if conjugation.positive == word || conjugation.negative == word =>
+            conjugation.toString
+        } orElse {
+          entry.declensions.collectFirst {
+            case inflectedForm if inflectedForm.singular == word || inflectedForm.plural == word =>
+              inflectedForm.toString
+          }
+        }
+      }
+    }
+  }
 
   def apply(word: String) = {
-    lemmaLookup.get(word) orElse {
-      completeLookup.get(word) map { index =>
-        entries(index)
-      }
+    completeLookup.get(word) map { index =>
+      entries(index)
     }
   }
 
@@ -143,6 +171,12 @@ case class Entries(entries: Seq[Entry]) {
 
   def entriesEndingWith(suffix: String) = {
     startsWith(suffix.reverse) flatMap { word => apply(word) }
+  }
+
+  def withDefinitionsContaining(word: String) = {
+    englishDefinitionWordReverseIndex.get(word).map { matchingIndexes =>
+      matchingIndexes.map { index => entries(index) }
+    }.getOrElse(Set.empty)
   }
 }
 

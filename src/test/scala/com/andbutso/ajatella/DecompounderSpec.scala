@@ -8,6 +8,7 @@ class DecompounderSpec extends ParentSpec {
         "sokerisirotin"         -> Seq("sokeri", "sirotin"),
         "sokeritautipotilas"    -> Seq("sokeritauti", "potilas"),
         "sokeriaineenvaihdunta" -> Seq("sokeri", "aineenvaihdunta")
+
       )
 
       expectations foreach { case (word, expectation) =>

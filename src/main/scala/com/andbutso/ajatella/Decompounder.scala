@@ -11,7 +11,7 @@ object Decompounder {
 class Decompounder(word: String) {
   val matches = {
     val subs = 2.to(word.size - 2).flatMap { n => word.sliding(n) }
-    subs.filter { sub => WordList.entries(sub).isDefined }
+    subs.filter { sub => WordList.entries(sub).isDefined || WordList.list.contains(sub) }
   }
 
   val matchesByStartingIndex = {
@@ -23,10 +23,6 @@ class Decompounder(word: String) {
     }
 
     lookup
-  }
-
-  def startingIndexes = {
-    matchesByStartingIndex.keys.toSeq.sorted
   }
 
   def traverse = {
@@ -46,39 +42,6 @@ class Decompounder(word: String) {
           parts
         case Some(more) =>
           extend(more.toSeq map { another => part :+ another})
-      }
-    }
-  }
-}
-
-class FirstAttemptDecompounder {
-  def apply(word: String) = {
-    val subs = 2.to(word.size - 2).flatMap { n => word.sliding(n) }
-    val matches = subs.collect {
-      case sub if WordList.entries(sub).isDefined =>
-        sub -> word.indexOf(sub)
-    }
-
-    val subsWithResults = matches.map { _._1 }
-
-    val subsWithResultsSorted = subsWithResults.sortBy { sub => word.indexOf(sub) }
-
-    val keepLongests = subsWithResults.filterNot { sub =>
-      subsWithResults.exists { otherSub => sub != otherSub && otherSub.contains(sub) }
-    }
-
-    def rangeInWord(sub: String) = {
-      val subIndex = word.indexOf(sub)
-      Range(subIndex, subIndex + sub.size)
-    }
-
-    val sorted = keepLongests.sortBy { sub => word.indexOf(sub) }
-
-    sorted.tail.foldLeft(Seq(sorted.head)) { case (subsToKeep, sub) =>
-      if (rangeInWord(subsToKeep.last).intersect(rangeInWord(sub)).isEmpty) {
-        subsToKeep :+ sub
-      } else {
-        subsToKeep
       }
     }
   }
