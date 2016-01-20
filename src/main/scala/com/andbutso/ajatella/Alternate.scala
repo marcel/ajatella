@@ -12,13 +12,32 @@ object GraphemeMatcher {
   implicit def alternateToGraphemeMatcher(alternate: Alternate): GraphemeMatcher = {
     GraphemeMatcher(alternate)
   }
+
+  implicit def stringToGraphemeMatcher(string: String): GraphemeMatcher = {
+    val chars = string.toCharArray map { char => Alternate.Identity(char.toString) }
+    chars.tail.foldLeft(GraphemeMatcher(chars.head)) { case (matcher, alternate) =>
+      matcher ∙ alternate
+    }
+  }
 }
 
-class GraphemeMatcher(initialAlternate: Option[Alternate] = None) {
+class GraphemeMatcher(initialAlternate: Option[Alternate] = None) extends TextualDescription {
   import Lexeme.stringToLexeme
 
   val indexes = new collection.mutable.ArrayBuffer[Alternate]() ++ initialAlternate
   def size = indexes.size
+  def reverse = {
+    val copy = new GraphemeMatcher()
+    copy.indexes ++= indexes.reverse
+    copy
+  }
+
+  def toText = {
+    indexes.map {
+      case o: Alternate.Or => s"(${o.toText})"
+      case alternate       => alternate.toText
+    }.mkString("∙")
+  }
 
   def apply(lexeme: Lexeme) = {
     indexIn(lexeme).map { startingIndex =>
@@ -39,11 +58,17 @@ class GraphemeMatcher(initialAlternate: Option[Alternate] = None) {
   ): Option[Lexeme] = {
     val interpolated = apply(lexeme).getOrElse(Array.empty)
     if (pf.isDefinedAt(interpolated)) {
-      val replacements = pf(interpolated).mkString
-      Some(lexeme.string.patch(indexIn(lexeme).get, replacements, size))
+      indexIn(lexeme) map { index =>
+        val replacements = pf(interpolated).mkString
+        lexeme.string.patch(index, replacements, size)
+      }
     } else {
       None
     }
+  }
+
+  def dropFrom(lexeme: Lexeme) = {
+    transform(lexeme) { case _ => Array.empty }
   }
 
   def interpolate(lexeme: Lexeme) = {
@@ -51,7 +76,9 @@ class GraphemeMatcher(initialAlternate: Option[Alternate] = None) {
   }
 
   def ∙(otherAlternate: Alternate) = {
-    indexes.append(otherAlternate)
+    if (otherAlternate != Alternate.Blank) {
+      indexes.append(otherAlternate)
+    }
     this
   }
 
@@ -60,7 +87,7 @@ class GraphemeMatcher(initialAlternate: Option[Alternate] = None) {
     this
   }
 
-  def |(a: Alternate) = {
+  def |(a: Alternate) = { // TODO This doesn't handle potential case of a == Alternate.Blank
     val lastElement = indexes.last
     indexes.update(indexes.size - 1, lastElement or a)
     this
@@ -99,10 +126,12 @@ class GraphemeMatcher(initialAlternate: Option[Alternate] = None) {
 // aren't really alternates as they are letter sequence sets which dictate the type
 // and sequence of one or more letters
 // Should perhaps be called GraphemeMatcher or something
-trait Alternate {
+trait Alternate extends TextualDescription {
   import Lexeme.stringToLexeme
 
-  def isDefinedAt(o: Any) = this.equals(o)
+  def isDefinedAt(o: Any): Boolean
+
+  override def equals(o: Any) = isDefinedAt(o)
 
   // Should return the interpolated version based on the lexeme
   def apply(lexeme: Lexeme): Lexeme = {
@@ -217,7 +246,17 @@ trait Alternate {
 object Alternate {
   import Grapheme.charToGrapheme
 
+  case object Blank extends Alternate {
+    def toText = ""
+
+    override def isDefinedAt(o: Any) = {
+      o == null || o == "" || o == None
+    }
+  }
+
   case object Vowel extends Alternate {
+    def toText = "V"
+
     override def equals(o: Any) = isDefinedAt(o)
 
     override def isDefinedAt(o: Any): Boolean = {
@@ -235,6 +274,8 @@ object Alternate {
   }
 
   case object Consonant extends Alternate {
+    def toText = "C"
+
     override def equals(o: Any) = isDefinedAt(o)
 
     override def isDefinedAt(o: Any): Boolean = {
@@ -252,7 +293,9 @@ object Alternate {
   }
 
   case class Not(grapheme: Grapheme) extends Alternate {
-    override def equals(o: Any): Boolean = {
+    def toText = s"!${grapheme.letter}"
+
+    override def isDefinedAt(o: Any): Boolean = {
       o match {
         case c: Char => !grapheme.equals(o)
         case s: String => !grapheme.equals(o)
@@ -263,6 +306,8 @@ object Alternate {
   }
 
   case class Or(lhs: Alternate, rhs: Alternate) extends Alternate {
+    def toText = s"""${lhs.toText} | ${rhs.toText}"""
+
     override final def apply(lexeme: Lexeme) = {
       if (lhs.isDefinedAt(lexeme)) {
         lhs(lexeme)
@@ -279,6 +324,8 @@ object Alternate {
   }
 
   case class Identity(string: String) extends Alternate {
+    def toText = string
+
     override def apply(lexeme: Lexeme): Lexeme = {
       string
     }
@@ -302,6 +349,8 @@ object Alternate {
 
   // TODO Constrain to only Graphame.isLetter
   case object AnyLetter extends Alternate {
+    def toText = "❋"
+
     override def apply(lexeme: Lexeme): Lexeme = {
       lexeme
     }
@@ -309,8 +358,6 @@ object Alternate {
     override def equals(o: Any) = true
 
     override def isDefinedAt(o: Any) = true
-
-    override def toString = "❋"
   }
 
   val L = AnyLetter
@@ -322,6 +369,15 @@ object Alternate {
 }
 
 case class VowelHarmonyAlternate(back: Vowel, front: Vowel) extends Alternate {
+  def toText = {
+    this match {
+      case Alternate.A => "A"
+      case Alternate.O => "O"
+      case Alternate.U => "U"
+      case _ => toString
+    }
+  }
+
   import Lexeme.stringToLexeme
 
   def apply(vowelType: Vowel.Type): Lexeme = {

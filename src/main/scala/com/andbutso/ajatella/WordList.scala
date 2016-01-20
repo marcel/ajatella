@@ -81,7 +81,22 @@ object WordList {
 }
 
 case class Entries(entries: IndexedSeq[Entry]) {
-  val englishDefinitionWordReverseIndex = collection.mutable.Map[String, Set[Int]]()
+  lazy val englishDefinitionWordReverseIndex = {
+    val englishWordToEntryIndex = collection.mutable.Map[String, Set[Int]]()
+
+    entries.zipWithIndex.foreach { case (entry, index) =>
+      val definitionWords = entry.definitions.flatMap { definition =>
+        definition.text.split("""\W+""").map { _.toLowerCase }
+      }.filter { _.size >= 3 }.toSet
+
+      definitionWords.foreach { definitionWord =>
+        val entryIndexes = englishWordToEntryIndex.getOrElseUpdate(definitionWord, Set.empty)
+        englishWordToEntryIndex(definitionWord) = entryIndexes + index
+      }
+    }
+
+    englishWordToEntryIndex
+  }
 
   lazy val completeLookup = {
     val formToIndex = collection.mutable.Map[String, Int]()
@@ -97,15 +112,6 @@ case class Entries(entries: IndexedSeq[Entry]) {
       entry.declensions.foreach { inflectedForm =>
         formToIndex(inflectedForm.singular) = index
         formToIndex(inflectedForm.plural) = index
-      }
-
-      val definitionWords = entry.definitions.flatMap { definition =>
-        definition.text.split("""\W+""").map { _.toLowerCase }
-      }.filter { _.size >= 4 }.toSet
-
-      definitionWords.foreach { definitionWord =>
-        val entryIndexes = englishDefinitionWordReverseIndex.getOrElseUpdate(definitionWord, Set.empty)
-        englishDefinitionWordReverseIndex(definitionWord) = entryIndexes + index
       }
     }
 
@@ -154,9 +160,11 @@ case class Entries(entries: IndexedSeq[Entry]) {
   }
 
   def startsWith(prefix: String) = {
-    wordTree.find(prefix) map { path =>
-      path.words
-    } getOrElse(Set.empty)
+    wordTree(prefix)
+  }
+
+  def startsWith(prefix: GraphemeMatcher) = {
+    wordTree(prefix)
   }
 
   def entriesStartingWith(prefix: String) = {
@@ -164,9 +172,13 @@ case class Entries(entries: IndexedSeq[Entry]) {
   }
 
   def endsWith(suffix: String) = {
-    reverseWordTree.find(suffix.reverse) map { path =>
-      path.words.map { _.reverse }
-    } getOrElse(Set.empty)
+    reverseWordTree(suffix.reverse) map { word =>
+      word.reverse
+    }
+  }
+
+  def endsWith(suffix: GraphemeMatcher) = {
+    reverseWordTree(suffix) map { _.reverse }
   }
 
   def entriesEndingWith(suffix: String) = {
@@ -177,6 +189,24 @@ case class Entries(entries: IndexedSeq[Entry]) {
     englishDefinitionWordReverseIndex.get(word).map { matchingIndexes =>
       matchingIndexes.map { index => entries(index) }
     }.getOrElse(Set.empty)
+  }
+}
+
+object Entry {
+  def random: Entry => Int = {
+    _ => util.Random.nextInt()
+  }
+
+  type Predicate = Entry => Boolean
+
+  object Predicate {
+    def apply(partOfSpeech: PartOfSpeech): Predicate = {
+      Entry.partOfSpeech(partOfSpeech.name)
+    }
+  }
+
+  def partOfSpeech(pos: String): Predicate = {
+    _.definitions.exists { _.partOfSpeech == pos }
   }
 }
 
@@ -202,7 +232,12 @@ case class Entry(
   def formatted = {
     pretty(any(this), w = 1)
   }
+
+  def toDefinition = {
+    Seq(word, "\t", definitions.map { _.text }.mkString("; ")).mkString
+  }
 }
+
 case class InflectedForm(caseName: String, singular: String, plural: String)
 case class Conjugation(mood: String, tense: String, person: String, number: Option[String], positive: String, negative: String)
 
@@ -244,15 +279,19 @@ case class WordList(words: Set[Word]) {
   }
 
   def startsWith(prefix: String) = {
-    wordTree.find(prefix) map { path =>
-      path.words
-    } getOrElse(Set.empty)
+    wordTree(prefix)
+  }
+
+  def startsWith(prefix: GraphemeMatcher) = {
+    wordTree(prefix)
   }
 
   def endsWith(suffix: String) = {
-    reverseWordTree.find(suffix.reverse) map { path =>
-      path.words.map { _.reverse }
-    } getOrElse(Set.empty)
+    reverseWordTree(suffix.reverse) map { _.reverse }
+  }
+
+  def endsWith(suffix: GraphemeMatcher) = {
+    reverseWordTree(suffix.reverse) map { _.reverse }
   }
 
   def apply(morpheme: String) = {
@@ -269,21 +308,27 @@ case class WordList(words: Set[Word]) {
 }
 
 //case class PartOfSpeech(pos: String) // tmp
+trait PartOfSpeech {
+  def name = {
+    getClass.getSimpleName.replace("$", "")
+  }
+}
+
 object PartOfSpeech {
-  val Adjective    = "Adjective"
-  val Adverb       = "Adverb"
-  val Conjunction  = "Conjunction"
-  val Interjection = "Interjection"
-  val Letter       = "Letter"
-  val Noun         = "Noun"
-  val Numeral      = "Numeral"
-  val Particle     = "Particle"
-  val Postposition = "Postposition"
-  val Preposition  = "Preposition"
-  val Pronoun      = "Pronoun"
-  val ProperNoun   = "Proper noun"
-  val Suffix       = "Suffix"
-  val Verb         = "Verb"
+  case object Adjective    extends PartOfSpeech
+  case object Adverb       extends PartOfSpeech
+  case object Conjunction  extends PartOfSpeech
+  case object Interjection extends PartOfSpeech
+  case object Letter       extends PartOfSpeech
+  case object Noun         extends PartOfSpeech
+  case object Numeral      extends PartOfSpeech
+  case object Particle     extends PartOfSpeech
+  case object Postposition extends PartOfSpeech
+  case object Preposition  extends PartOfSpeech
+  case object Pronoun      extends PartOfSpeech
+  case object ProperNoun   extends PartOfSpeech
+  case object Suffix       extends PartOfSpeech
+  case object Verb         extends PartOfSpeech
 }
 
 case class Word(morpheme: String) extends Ordered[Word] {

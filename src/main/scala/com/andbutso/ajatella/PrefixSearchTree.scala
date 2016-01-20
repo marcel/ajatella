@@ -8,7 +8,7 @@ import scala.collection.mutable
 object PrefixSearchTree {
   type Children = mutable.Map[Char, Node]
   val EmptyChildren = mutable.Map[Char, Node]()
-  val TerminatedChild = EmptyChildren += Leaf.letter -> Leaf
+  val TerminatedChild = EmptyChildren + (Leaf.letter -> Leaf)
 
   case class Path(prefix: String, location: Node) {
     def words = {
@@ -17,46 +17,23 @@ object PrefixSearchTree {
         letters: List[Char],
         words: Set[String]
       ): Set[String] = {
-//        println("-"*100)
         nodes match {
           case Nil =>
-//            println("+ Nil")
-//            println(s"  nodes: $nodes")
-//            println(s"  words: $words")
-//            println(s"  letters: $letters")
-//            println("-> words")
             words
-          case Leaf :: remainder =>
-//            println("+ Leaf :: remainder")
-//            println(s"  nodes: $nodes")
-//            println(s"  words: $words")
-//            println(s"  letters: $letters")
-//            println(s"  remainder: $remainder")
-//            println("-> descend(remainder, prefix, words)")
-            descend(remainder, letters, words + letters.reverse.mkString)
-          case Branch(letter, TerminatedChild) :: remainder =>
-//            println("+ Branch(letter, TerminatedChild) :: remainder")
-//            println(s"  letter: $letter")
-//            println(s"  nodes: $nodes")
-//            println(s"  words: $words")
-//            println(s"  letters: $letters")
-//            println(s"  remainder: $remainder")
-            val newLetters = letter :: letters
-//            println(s"  newLetters: $newLetters")
-//            println("-> descend(remainder, newPrefix, words + newPrefix.reverse.mkString)")
-            descend(remainder, newLetters, words + newLetters.reverse.mkString)
-          case Branch(letter, descendants) :: remainder =>
-//            println("+ Branch(letter, descendants) :: remainder")
-//            println(s"  letter: $letter")
-//            println(s"  nodes: $nodes")
-//            println(s"  words: $words")
-//            println(s"  letters: $letters")
-//            println(s"  remainder: $remainder")
-//            println(s"  descendants: $descendants")
-//            println("-> descend(descendants.values.toList, letter :: letters, words)")
-            descend(remainder, letters, descend(descendants.values.toList, letter :: letters, words))
-          case TerminatedChild :: Nil =>
-            descend(Nil, letters, words + letters.reverse.mkString)
+          case branch :: remainder =>
+            if (branch.isTerminated) {
+              val children   = branch.children - Leaf.letter
+              val newLetters = branch.letter :: letters
+              val newWords   = words + newLetters.reverse.mkString
+
+              descend(remainder, letters, descend(children.values.toList, newLetters, newWords))
+            } else {
+              descend(
+                remainder,
+                letters,
+                descend(branch.children.values.toList, branch.letter :: letters, words)
+              )
+            }
         }
       }
 
@@ -72,8 +49,29 @@ object PrefixSearchTree {
     def letter: Char
     def children: Children
 
+    def find(prefix: GraphemeMatcher) = {
+      def descend(
+        alternates: List[Alternate],
+        foundPrefix: List[Char],
+        relativeRoot: Node,
+        descendants: Children
+      ): Set[Path] = {
+        alternates match {
+          case Nil =>
+            Set(Path(foundPrefix.reverse.mkString, relativeRoot))
+          case alternate :: remainder =>
+            val matchingKeys = descendants.keySet.filter { key =>
+              alternate.isDefinedAt(key)
+            }
 
-    def find(letters: Letters) = ??? // TODO Implement support for return paths that match Alternates
+            matchingKeys.flatMap { key =>
+              descend(remainder, key :: foundPrefix, descendants(key), descendants(key).children)
+            }.toSet
+        }
+      }
+
+      descend(prefix.indexes.toList, Nil, this, children)
+    }
 
     def find(prefix: String): Option[PrefixSearchTree.Path] = {
       @tailrec
@@ -84,16 +82,28 @@ object PrefixSearchTree {
           case letter :: Nil =>
             descendants.get(letter) map { child => Path(prefix, child) }
           case letter :: remainder =>
-            val descendant = descendants.get(letter)
-            descend(remainder, descendant.map { _.children } getOrElse EmptyChildren)
+            descendants.get(letter) match {
+              case Some(descendant) =>
+                descend(remainder, descendant.children)
+              case _ =>
+                None
+            }
         }
       }
 
       descend(prefix.toCharArray.toList, children)
     }
 
+    def contains(prefix: String) = {
+      find(prefix).isDefined
+    }
+
     def terminate = {
       children.getOrElseUpdate(Leaf.letter, Leaf)
+    }
+
+    def isTerminated = {
+      children.contains(Leaf.letter)
     }
 
     override final def equals(o: Any) = {
@@ -123,6 +133,14 @@ case class PrefixSearchTree(
   children: Children = mutable.Map[Char, PrefixSearchTree.Node]()
 ) extends PrefixSearchTree.Node {
   val letter = ' '
+
+  def apply(prefix: String) = {
+    find(prefix) map { _.words } getOrElse(Set.empty)
+  }
+
+  def apply(prefix: GraphemeMatcher) = {
+    find(prefix) flatMap { _.words }
+  }
 
   def add(word: String): Unit = {
     add(word.toCharArray)

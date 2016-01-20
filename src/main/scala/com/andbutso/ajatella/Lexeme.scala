@@ -43,6 +43,9 @@ case class Lexeme(val string: String) extends AnyVal {
     entry.map { _.word }
   }
 
+  // TODO See page 45 of Karlsson
+  def inflectionalStem = ???
+
   def decompound = {
     Decompounder(string)
   }
@@ -87,6 +90,10 @@ case class Lexeme(val string: String) extends AnyVal {
   }
 
   def define = definitions
+
+  def definedBy = {
+    WordList.entries.withDefinitionsContaining(string)
+  }
 
   def drop(suffix: String): Option[Lexeme] = {
     if (string.endsWith(suffix)) {

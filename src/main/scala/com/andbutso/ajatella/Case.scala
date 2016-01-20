@@ -23,16 +23,24 @@ object Case {
 
   // Grammatical
   case object Nominative extends Case {
-    def suffixes = Set(V∙C)
+    val suffix = V|C
+    def suffixes = Set(suffix)
   }
   case object Genetive extends Case(Some("of")) {
+    val te  = t∙e // Plural
+    val ten = t∙e∙n // Plural
+    val tte = t∙t∙e // Plural
+    val tten = t∙t∙e∙n // Plural
     def suffixes = Set(n)
   }
   case object Accusative extends Case(Some("(object, whole)")) {
+    val t = Consonants.t
     def suffixes = Set(t)
   }
   case object Partative  extends Case(Some("(object, part/incomplete)")) {
-    def suffixes = Set(A, t∙A, t∙t∙A)
+    val tA = t∙A
+    val ttA = t∙t∙A
+    def suffixes = Set(A, tA, ttA)
 
     override def suffixFor(lexeme: Lexeme) = {
       if (lexeme.letters.last.isVowel) {
@@ -140,7 +148,7 @@ object Case {
   }
 }
 
-abstract class Case(preposition: Option[String] = None) extends Suffix {
+abstract class Case(preposition: Option[String] = None) {
   def suffixes: Set[GraphemeMatcher]
 
   def name = {
@@ -152,8 +160,6 @@ abstract class Case(preposition: Option[String] = None) extends Suffix {
 
     (this.toString, endings, preposition)
   }
-
-  def letters = ??? // TODO Choose the right suffix
 
   // TODO Revisit
 //  def matches(lexeme: Lexeme) = {

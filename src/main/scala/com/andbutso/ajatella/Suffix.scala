@@ -11,7 +11,7 @@ object Suffix {
 // onto a lexeme performs consonant gradation if necessary and selects
 // the appropriate front or back vowel if applicable
 trait Suffix {
-  def letters: Letters
+  def ending: GraphemeMatcher
 }
 
 
@@ -93,4 +93,4 @@ object DerivationSuffix {
 
 }
 
-class DerivationSuffix(val letters: Letters) extends Suffix
+class DerivationSuffix(val ending: GraphemeMatcher) extends Suffix

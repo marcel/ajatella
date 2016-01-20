@@ -11,14 +11,15 @@ trait Verb
 trait NonFiniteVerb extends Verb
 trait Participle extends NonFiniteVerb
 
-case class ActiveParticiple(letters: Letters) extends Suffix
+case class ActiveParticiple(ending: GraphemeMatcher) extends Suffix
 object ActiveParticiple {
   import Alternate._
+  import Consonants._
 
   // Present
-  val VA  = ActiveParticiple(Letters("v", A))
+  val VA  = ActiveParticiple(v∙A)
   // Past
-  val NUT = ActiveParticiple(Letters("n", U, "t"))
+  val NUT = ActiveParticiple(n∙U∙t)
 }
 
 case class Infinitive(suffixes: Set[Letters])
@@ -39,12 +40,16 @@ case class FiniteVerb(
   clitic: Option[Clitic]
 ) extends Verb
 
-abstract class Mood(val letters: Letters) extends Suffix
+abstract class Mood(val ending: GraphemeMatcher) extends Suffix
 object Mood {
-  case object Indicative extends Mood(Letters(""))
-  case object Conditional extends Mood(Letters("isi"))
-  case object Potential extends Mood(Letters("ne")) // TODO And others
-  case object Imperative extends Mood(Letters("")) // TODO Tons of exceptions based on person
+  import Alternate.Blank
+  import Consonants._
+  import Vowels._
+
+  case object Indicative extends Mood(Blank)
+  case object Conditional extends Mood(i∙s∙i)
+  case object Potential extends Mood(n∙e) // TODO And others
+  case object Imperative extends Mood(Blank) // TODO Tons of exceptions based on person
 }
 
 trait Tense
@@ -57,11 +62,31 @@ object Tense {
   case object Pluperfect extends Tense
 }
 
-trait Person
+trait TextualDescription {
+  def toText: String
+}
+
+trait Person extends TextualDescription {
+  import Number._
+
+  def singular(ending: GraphemeMatcher) = Possessive(this, Singular, ending)
+  def plural(ending: GraphemeMatcher)   = Possessive(this, Plural, ending)
+}
+
 object Person {
-  case object First  extends Person
-  case object Second extends Person
-  case object Third  extends Person
+  case object First  extends Person {
+    def toText = "1st person"
+  }
+  case object Second extends Person {
+    def toText = "2nd person"
+  }
+  case object Third  extends Person {
+    def toText = "3rd person"
+  }
+
+  val FirstPerson  = First
+  val SecondPerson = Second
+  val ThirdPerson  = Third
 }
 
 trait Pronoun // minä, sinä, hän, me, te, he

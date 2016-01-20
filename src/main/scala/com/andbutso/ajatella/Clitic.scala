@@ -1,19 +1,22 @@
 package com.andbutso.ajatella
 
-case class Clitic(letters: Letters) extends Suffix
+case class Clitic(ending: GraphemeMatcher) extends Suffix
 
 object Clitic {
   import Alternate._
+  import Consonants._
+  import Vowels._
+  import Alternate.Identity._
 
   // Common
-  val kO   = Clitic(Letters("k", O))
-  val kin  = Clitic(Letters("kin"))
-  val kAAn = Clitic(Letters("k", A, A, "n"))
-  val pA   = Clitic(Letters("p", A))
+  val kO   = Clitic(k∙O)
+  val kin  = Clitic(k∙i∙n)
+  val kAAn = Clitic(k∙A∙A∙n)
+  val pA   = Clitic(p∙A)
 
   // Uncommon
-  val kA   = Clitic(Letters("k", A))
-  val s    = Clitic(Letters("s"))
+  val kA   = Clitic(k∙A)
+  val s    = Clitic(Consonants.s)
 
   val All = Seq(
     kO,
