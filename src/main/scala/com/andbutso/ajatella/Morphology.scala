@@ -148,20 +148,20 @@ object Morphology {
     val Nouns = Map(
         1 -> Noun(V|C,          Nominative,  L           ), // TODO Not L, should be absent
         2 -> Noun(V,            Nominative,  L,       One), // TODO Not L, should be absent
-        3 -> Noun(V,            Genetive,    L,       One), // TODO Not L, should be absent
+        3 -> Noun(V,            Genitive,    L,       One), // TODO Not L, should be absent
         4 -> Noun(V,         i, Nominative,  L,       One), // TODO Not Plural.i & not L, both should be absent
        40 -> Noun(C∙V,          Partative,   A,       Two),
        44 -> Noun(C,         i, Partative,   A,       Two),
        46 -> Noun(C∙V,       j, Partative,   A,       Two),
-       55 -> Noun(V∙V,       i, Genetive,    d∙e,     One),
-       57 -> Noun(V∙V,       i, Genetive,    d∙e∙n       ),
+       55 -> Noun(V∙V,       i, Genitive,    d∙e,     One),
+       57 -> Noun(V∙V,       i, Genitive,    d∙e∙n       ),
        58 -> Noun(V,         i, Accusative,  d∙ä∙t       ),
-       59 -> Noun(C∙i,       i, Genetive,    e,       One), // TODO Not Plural.i, the column is blank
-       61 -> Noun(C,         i, Genetive,    e,       One),
-       62 -> Noun(C∙V,       i, Genetive,    e,       One),
-       65 -> Noun(C∙i,       i, Genetive,    e∙n         ), // TODO Not Plural.i, the column is blank
-       69 -> Noun(C,         i, Genetive,    e∙n         ),
-       71 -> Noun(C∙V,       j, Genetive,    e∙n         ),
+       59 -> Noun(C∙i,       i, Genitive,    e,       One), // TODO Not Plural.i, the column is blank
+       61 -> Noun(C,         i, Genitive,    e,       One),
+       62 -> Noun(C∙V,       i, Genitive,    e,       One),
+       65 -> Noun(C∙i,       i, Genitive,    e∙n         ), // TODO Not Plural.i, the column is blank
+       69 -> Noun(C,         i, Genitive,    e∙n         ),
+       71 -> Noun(C∙V,       j, Genitive,    e∙n         ),
        73 -> Noun(V∙V,       i, Illative,    h∙i,     One),
        75 -> Noun(V∙V,       i, Illative,    h∙i∙n       ),
        76 -> Noun(V∙V,          Illative,    h∙V,     One),
@@ -178,7 +178,7 @@ object Morphology {
       130 -> Noun(V|C,       i, Allative,    l∙l∙e,   Two),
       136 -> Noun(V,            Ablative,    l∙t∙A,   Two),
       142 -> Noun(V|C,       i, Ablative,    l∙t∙A,   Two),
-      153 -> Noun(V,            Genetive,    n           ),
+      153 -> Noun(V,            Genitive,    n           ),
       167 -> Noun(V,            Essive,      n∙A,     Two),
       173 -> Noun(V|C,       i, Essive,      n∙A,     Two),
       177 -> Noun(V∙V,          Illative,    s∙e∙e,   One),
@@ -194,13 +194,13 @@ object Morphology {
       226 -> Noun(V∙V,          Partative,   t∙A         ),
       227 -> Noun(l|n|r|s|t,    Partative,   t∙A,     Two),
       229 -> Noun(V∙V,       i, Partative,   t∙A,     Two),
-      230 -> Noun(l|n|r|s,      Genetive,    t∙e,     One), // TODO This is actually a plural, not singlar as the default is without a number specified
-      231 -> Noun(l|n|r|s,      Genetive,    t∙e∙n       ), // Ditto
+      230 -> Noun(l|n|r|s,      Genitive,    t∙e,     One), // TODO This is actually a plural, not singlar as the default is without a number specified
+      231 -> Noun(l|n|r|s,      Genitive,    t∙e∙n       ), // Ditto
       232 -> Noun(C∙e,          Partative,   t∙t∙A       ),
       233 -> Noun(V,            Abessive,    t∙t∙A,   Two),
       234 -> Noun(V|C,       i, Abessive,    t∙t∙A,   Two),
-      238 -> Noun(V∙V,       i, Genetive,    t∙t∙e,   One),
-      241 -> Noun(V∙V,       i, Genetive,    t∙t∙e∙n     ),
+      238 -> Noun(V∙V,       i, Genitive,    t∙t∙e,   One),
+      241 -> Noun(V∙V,       i, Genitive,    t∙t∙e∙n     ),
       244 -> Noun(C∙V,          Illative,    V           ),
       248 -> Noun(C∙V,          Illative,    V∙n         )
     )

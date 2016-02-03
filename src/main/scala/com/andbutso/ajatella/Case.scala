@@ -26,7 +26,7 @@ object Case {
     val suffix = V|C
     def suffixes = Set(suffix)
   }
-  case object Genetive extends Case(Some("of")) {
+  case object Genitive extends Case(Some("of")) {
     val te  = t∙e // Plural
     val ten = t∙e∙n // Plural
     val tte = t∙t∙e // Plural
@@ -117,7 +117,7 @@ object Case {
   val All = Seq(
     // Grammatical
     Nominative,
-    Genetive,
+    Genitive,
     Accusative,
     Partative,
     // Locative (internal)

@@ -103,15 +103,21 @@ case class Entries(entries: IndexedSeq[Entry]) {
 
     entries.zipWithIndex.foreach { case (entry, index) =>
       formToIndex(entry.word) = index
+    }
 
+    entries.zipWithIndex.foreach { case (entry, index) =>
       entry.conjugations.foreach { conjugation =>
         formToIndex(conjugation.positive) = index
         formToIndex(conjugation.negative) = index
       }
 
       entry.declensions.foreach { inflectedForm =>
-        formToIndex(inflectedForm.singular) = index
-        formToIndex(inflectedForm.plural) = index
+        if (!formToIndex.contains(inflectedForm.singular)) { // Work around for inflected forms clobbering main entry
+          formToIndex(inflectedForm.singular) = index
+        }
+        if (!formToIndex.contains(inflectedForm.plural)) {
+          formToIndex(inflectedForm.plural) = index
+        }
       }
     }
 
@@ -147,6 +153,22 @@ case class Entries(entries: IndexedSeq[Entry]) {
     apply(word).isDefined
   }
 
+  def ranked = {
+    import Lexeme.stringToLexeme
+
+    entries.sortBy { _.word.frequencyRank }
+  }
+
+  def onlyRanked = {
+    import Lexeme.stringToLexeme
+
+    entries.filter {
+      _.word.frequencyRank < Int.MaxValue
+    }.sortBy {
+      _.word.frequencyRank
+    }
+  }
+
   lazy val wordTree = {
     val wt = PrefixSearchTree()
     entries foreach { entry => wt.add(entry.word) }
@@ -178,17 +200,59 @@ case class Entries(entries: IndexedSeq[Entry]) {
   }
 
   def endsWith(suffix: GraphemeMatcher) = {
-    reverseWordTree(suffix) map { _.reverse }
+    reverseWordTree(suffix.reverse) map { _.reverse }
   }
 
   def entriesEndingWith(suffix: String) = {
-    startsWith(suffix.reverse) flatMap { word => apply(word) }
+    endsWith(suffix) flatMap { word => apply(word) }
   }
 
   def withDefinitionsContaining(word: String) = {
     englishDefinitionWordReverseIndex.get(word).map { matchingIndexes =>
       matchingIndexes.map { index => entries(index) }
     }.getOrElse(Set.empty)
+  }
+
+  def inflectionTranslationSummary(
+    declensionType: Option[String],
+    groups: Map[Option[String],IndexedSeq[com.andbutso.ajatella.Entry]],
+    topN: Int = 10
+  ) = {
+    import Lexeme._
+    println("Declension type: " + declensionType.get + "\n")
+    val entries = groups(declensionType)
+    val topEntries = entries.sortBy { _.word.frequencyRank }.filter { _.word.frequencyRank < Int.MaxValue }.take(topN)
+    topEntries.foreach { entry =>
+      val word = entry.word
+
+      val firstNounDef = entry.definitions.filter { _.partOfSpeech == "Noun" }.minBy { _.number }
+      val inEnglish = firstNounDef.text
+      val inflectedForms = entry.declensions.map { form =>
+        form.caseName -> form
+      }.toMap
+
+      def tab(columns: Seq[String]) = {
+        println(columns.mkString("\t"))
+      }
+
+      tab(Seq(inflectedForms("nominative").singular, s"$inEnglish (nominative singular)"))
+      if (inflectedForms("nominative").singular != inflectedForms("accusative").singular) {
+        tab(Seq(inflectedForms("accusative").singular, s"$inEnglish (accusative singular)"))
+      }
+      tab(Seq(inflectedForms("partitive").singular, s"$inEnglish (partitive singular)"))
+      tab(Seq(inflectedForms("genitive").singular, s"$inEnglish (genitive singular)"))
+      tab(Seq(inflectedForms("illative").singular, s"to the $inEnglish (illative singular)"))
+      tab(Seq(inflectedForms("inessive").singular, s"in the $inEnglish (inessive singular)"))
+      tab(Seq(inflectedForms("elative").singular, s"out of the $inEnglish (elative singular)"))
+      tab(Seq(inflectedForms("adessive").singular, s"at the $inEnglish (adessive singular)"))
+      tab(Seq(inflectedForms("ablative").singular, s"from the $inEnglish (ablative singular)"))
+      tab(Seq(inflectedForms("allative").singular, s"onto the $inEnglish (allative singular)"))
+      tab(Seq(inflectedForms("essive").singular, s"using as a $inEnglish (essive singular)"))
+      tab(Seq(inflectedForms("translative").singular, s"becoming a $inEnglish (translative singular)"))
+      tab(Seq(inflectedForms("abessive").singular, s"without a $inEnglish (abessive singular)"))
+
+
+    }
   }
 }
 
@@ -221,9 +285,18 @@ case class Entry(
   hyphenation: Option[String],
   relatedTerms: Seq[String],
   derivedTerms: Map[String, Seq[String]],
-  seeAlso: Seq[String]
+  seeAlso: Seq[String],
+  etymology: Seq[String]
 ) {
   import org.kiama.output.PrettyPrinter._
+
+  def apply(mood: Mood) = {
+    conjugations.filter { _.mood == mood.name }
+  }
+
+  def apply(filter: Conjugation.Filter) = {
+    conjugations.filter { conjugation => filter.matches(conjugation) }
+  }
 
   def inflected(nounCase: Case) = {
     declensions.find { _.caseName == nounCase.name }
@@ -239,6 +312,22 @@ case class Entry(
 }
 
 case class InflectedForm(caseName: String, singular: String, plural: String)
+
+object Conjugation {
+  case class Filter(
+    mood: Option[Mood] = None,
+    tense: Option[Tense] = None,
+    person: Option[Person] = None,
+    number: Option[Number] = None
+  ) {
+    def matches(conjugation: Conjugation) = {
+      mood.map   { _.name == conjugation.mood }.getOrElse(true)      &&
+      tense.map  { _.name == conjugation.tense }.getOrElse(true)     &&
+      person.map { _.toText == conjugation.person }.getOrElse(true)  &&
+      number.map { n => conjugation.number.exists { _ == n.toText.take(4) }  }.getOrElse(true)
+    }
+  }
+}
 case class Conjugation(mood: String, tense: String, person: String, number: Option[String], positive: String, negative: String)
 
 case class Definition(partOfSpeech: String, number: Int, text: String, examples: Seq[ExampleUsage])

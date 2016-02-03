@@ -40,7 +40,10 @@ case class FiniteVerb(
   clitic: Option[Clitic]
 ) extends Verb
 
-abstract class Mood(val ending: GraphemeMatcher) extends Suffix
+abstract class Mood(val ending: GraphemeMatcher) extends Suffix {
+  def name = getClass.getSimpleName.replace("$", "").toLowerCase
+}
+
 object Mood {
   import Alternate.Blank
   import Consonants._
@@ -52,7 +55,9 @@ object Mood {
   case object Imperative extends Mood(Blank) // TODO Tons of exceptions based on person
 }
 
-trait Tense
+trait Tense {
+  def name = getClass.getSimpleName.replace("$", "").toLowerCase
+}
 
 object Tense {
   case object Infinitive extends Tense
@@ -75,13 +80,13 @@ trait Person extends TextualDescription {
 
 object Person {
   case object First  extends Person {
-    def toText = "1st person"
+    def toText = "1st"
   }
   case object Second extends Person {
-    def toText = "2nd person"
+    def toText = "2nd"
   }
   case object Third  extends Person {
-    def toText = "3rd person"
+    def toText = "3rd"
   }
 
   val FirstPerson  = First

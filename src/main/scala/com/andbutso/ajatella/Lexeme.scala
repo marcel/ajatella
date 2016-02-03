@@ -1,5 +1,7 @@
 package com.andbutso.ajatella
 
+import com.andbutso.ajatella.Lexeme.Summary
+
 case class Lemma(lexeme: Lexeme, tags: String)
 
 case class Lexeme(val string: String) extends AnyVal {
@@ -47,7 +49,7 @@ case class Lexeme(val string: String) extends AnyVal {
   def inflectionalStem = ???
 
   def decompound = {
-    Decompounder(string)
+    Lexeme.CompoundWord(Decompounder(string))
   }
 
   def form = {
@@ -91,6 +93,10 @@ case class Lexeme(val string: String) extends AnyVal {
 
   def define = definitions
 
+  def etymology = {
+    entry.map { _.etymology }.getOrElse(Seq.empty)
+  }
+
   def definedBy = {
     WordList.entries.withDefinitionsContaining(string)
   }
@@ -116,6 +122,10 @@ case class Lexeme(val string: String) extends AnyVal {
     WordList.wordFrequencies.rank(this)
   }
 
+  def hasFrequencyRank = {
+    frequencyRank < Int.MaxValue
+  }
+
   def vowelTypes: Set[Vowel.Type] = {
     letters.collect { case v: Vowel => v.vowelType } toSet
   }
@@ -133,6 +143,14 @@ case class Lexeme(val string: String) extends AnyVal {
         types.head
       }
     }
+  }
+
+  def summary = {
+    Summary(this).toString
+  }
+
+  def toDefinition = {
+    entry map { _.toDefinition } getOrElse("")
   }
 
   def replaceLast(before: String, after: String): Lexeme = {
@@ -173,5 +191,37 @@ object Lexeme {
 
   implicit def lexemeToString(lexeme: Lexeme): String = {
     lexeme.string
+  }
+
+  case class CompoundWord(parts: Seq[String]) {
+    override def toString = parts.toString()
+
+    def summary = {
+      if (parts.size > 1) {
+        val words = parts.mkString(" - ")
+        val definitions = parts.flatMap {_.entry.map {_.toDefinition}}.mkString("\n  ")
+        s"Decompounded: $words\n\n  $definitions"
+      } else {
+        ""
+      }
+    }
+  }
+
+  case class Summary(lexeme: Lexeme) {
+    override def toString = {
+      s"""
+        |${lexeme.string} $hyphenation
+        |
+        |  ${lexeme.entry.map { _.toDefinition }.getOrElse("")}
+        |
+        |${lexeme.decompound.summary}
+      """.stripMargin
+    }
+
+    def hyphenation = {
+      lexeme.entry.map { entry =>
+        s"(${entry.hyphenation.getOrElse(lexeme.syllables.mkString("∙"))})"
+      }.getOrElse("")
+    }
   }
 }
