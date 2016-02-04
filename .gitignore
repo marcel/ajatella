@@ -1,3 +1,10 @@
+data/*.txt
+data/*.tsv
+data/*.json
+data/*.xml
+data/kotus*
+data/fiwn*
+
 *.class
 *.log
 *.swp

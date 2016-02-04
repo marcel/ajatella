@@ -20,7 +20,7 @@ class Entry
   attr_accessor :word, :current_section, :declensions, :conjugations, :parts_of_speech
   attr_accessor :current_part_of_speech, :hyphenation, :pronunciation, :saw_rare_section, :mangled_declention_or_conjugation
   attr_accessor :conjugation_type, :declension_type, :derived_terms, :related_terms, :see_also
-  attr_accessor :definitions, :current_mood, :current_tenses
+  attr_accessor :definitions, :current_mood, :current_tenses, :etymologies, :subsection_seen
   
   def initialize(word)
     @word = word
@@ -30,8 +30,10 @@ class Entry
     @derived_terms = {}
     @related_terms = []
     @see_also      = []
+    @etymologies   = []
     @parts_of_speech = Set.new
     @saw_rare_section = false
+    @subsection_seen = false
     @mangled_declention_or_conjugation = false
   end
   
@@ -41,7 +43,8 @@ class Entry
       conjugations: conjugations, declensions: declensions, 
       conjugation_type: conjugation_type, declension_type: declension_type,
       pronunciation: pronunciation, hyphenation: hyphenation,
-      related_terms: related_terms, derived_terms: derived_terms, see_also: see_also
+      related_terms: related_terms, derived_terms: derived_terms, see_also: see_also,
+      etymology: etymologies
     }.to_json(*a)
   end
   
@@ -51,6 +54,14 @@ class Entry
   
   def in_conjugations_section?
     !conjugation_type.nil? && !current_mood.nil?
+  end
+  
+  def in_etymology_section?
+    current_section.to_s['Etymology'] && !subsection_seen?
+  end
+  
+  def subsection_seen?
+    @subsection_seen
   end
   
   def saw_rare_section?
@@ -139,6 +150,10 @@ if $0 == __FILE__
   puts "["
   
   ARGF.each do |line|
+    if entry
+      entry.subsection_seen = line['[i]']
+    end
+    
     case line
     when /^(\S.*)/
       if entry
@@ -152,6 +167,7 @@ if $0 == __FILE__
       end
     when %r{\[b\]([A-Z][^\[]*)\[/b\]}
       entry.current_section = $1
+      entry.subsection_seen = false
     when PART_OF_SPEECH
       entry.current_part_of_speech = $1
       entry.parts_of_speech << $1
@@ -198,8 +214,8 @@ if $0 == __FILE__
         number = $6
         entry.conjugations << Conjugation.new(entry.current_mood, entry.current_tenses[1], person, number, $7, $8)
       end
-    else     
-      if (entry.in_definitions_section? && !entry.definitions.empty? && (line =~ /^\s+\S.+$/)) # i.e. a non blank line
+    when /^\s+\S.+$/ # i.e. a non blank line     
+      if entry.in_definitions_section? && !entry.definitions.empty?
         
         current_definition = entry.definitions.last
         existing_examples  = current_definition.example_usage
@@ -228,10 +244,30 @@ if $0 == __FILE__
         else
           #p  line
         end
-      else
-        #p line if line != " \n"
+      elsif entry.in_etymology_section?
+        stripped_line = line.strip
+        
+        if entry.etymologies.empty?
+          entry.etymologies << stripped_line
+        else
+          if number = entry.current_section[/\d/]
+            
+            number = number.to_i
+            current_index = number - 1
+            
+            if entry.etymologies.size == number
+              entry.etymologies.last << " #{stripped_line}"
+            else
+              entry.etymologies << stripped_line
+            end
+          else
+            entry.etymologies.last << " #{stripped_line}"
+          end
+        end
       end
-    end
+    else
+      # Blank lin
+    end    
   end
   
   puts "]"
