@@ -19,6 +19,8 @@ scalacOptions in Test ++= Seq("-Yrangepos")
 
 initialCommands := """
 import com.andbutso.ajatella._
+import Conversions._
+import Case._
 import Lexeme._
 import Grapheme._
 import Vowel._

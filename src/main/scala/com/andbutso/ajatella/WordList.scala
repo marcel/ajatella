@@ -169,6 +169,10 @@ case class Entries(entries: IndexedSeq[Entry]) {
     }
   }
 
+  def toDefinitions = {
+    entries.map { _.toDefinition }
+  }
+
   lazy val wordTree = {
     val wt = PrefixSearchTree()
     entries foreach { entry => wt.add(entry.word) }

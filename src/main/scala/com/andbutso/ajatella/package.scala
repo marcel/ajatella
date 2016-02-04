@@ -8,4 +8,20 @@ package object ajatella {
   def pp(o: Any) = {
     println(pretty(any(o), w = 1))
   }
+
+  def pe(objects: Seq[Any]): Unit = {
+    objects foreach println
+  }
+
+  object Conversions {
+    import Lexeme.stringToLexeme
+
+    implicit def setOfStringToEntries(words: Set[String]): Entries = {
+      Entries(words.flatMap { _.entry }.toIndexedSeq)
+    }
+
+    implicit def seqOfStringToEntries(words: Seq[String]): Entries = {
+      Entries(words.flatMap { _.entry }.toIndexedSeq)
+    }
+  }
 }
